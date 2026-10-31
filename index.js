@@ -1,19 +1,31 @@
-const {
-  Client,
-  GatewayIntentBits,
-  EmbedBuilder
-} = require("discord.js");
+const { Client, GatewayIntentBits, EmbedBuilder } =
+  require("discord.js");
 
 const client = new Client({
   intents: [GatewayIntentBits.Guilds]
 });
 
-// CONFIGURATION
-const DISCORD_CHANNEL_ID = process.env.CHANNEL_ID;
-const BOT_TOKEN = process.env.BOT_TOKEN;
+async function main() {
+  await client.login(process.env.BOT_TOKEN);
 
-client.once("ready", () => {
-  console.log(`Bot online as ${client.user.tag}`);
+  const channel = await client.channels.fetch(
+    process.env.CHANNEL_ID
+  );
+
+  const embed = new EmbedBuilder()
+    .setColor("#5865F2")
+    .setTitle("🚀 Roblox Updates")
+    .setDescription("Our announcement system is online!")
+    .setFooter({ text: "Roblox Community" })
+    .setTimestamp();
+
+  await channel.send({ embeds: [embed] });
+
+  console.log("Test announcement sent!");
+  await client.destroy();
+}
+
+main().catch(error => {
+  console.error(error);
+  process.exit(1);
 });
-
-client.login(BOT_TOKEN);
