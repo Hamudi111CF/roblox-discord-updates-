@@ -8,6 +8,7 @@ const client = new Client({
 const UNIVERSE_ID = process.env.UNIVERSE_ID;
 const CHANNEL_ID = process.env.CHANNEL_ID;
 const TOKEN = process.env.BOT_TOKEN;
+const PLACE_ID = process.env.PLACE_ID;
 
 const STATE_FILE = "last_seen.json";
 
@@ -44,6 +45,17 @@ async function main() {
 
   if (!game) throw new Error("Game not found");
 
+  const thumbnailResponse = await fetch(
+    `https://thumbnails.roblox.com/v1/games/icons?universeIds=${UNIVERSE_ID}&size=512x512&format=Png&isCircular=false`
+  );
+
+  let thumbnail = null;
+
+  if (thumbnailResponse.ok) {
+    const thumbnailData = await thumbnailResponse.json();
+    thumbnail = thumbnailData.data?.[0]?.imageUrl || null;
+  }
+
   const previousFile = await githubRequest(STATE_FILE);
   let previous = null;
 
@@ -67,12 +79,27 @@ async function main() {
     const embed = new EmbedBuilder()
       .setColor("#5865F2")
       .setTitle("🆕 GAME UPDATED!")
-      .setDescription(`**${game.name}** has been updated!`)
-      .addFields({
-        name: "Game",
-        value: `[Play Now](https://www.roblox.com/games/131365937565115)`
-      })
+      .setDescription(
+        `**${game.name}** has received an update!\n\nCheck out what's new and jump back into the game!`
+      )
+      .addFields(
+        {
+          name: "🎮 Game",
+          value: `[Play Now](https://www.roblox.com/games/${PLACE_ID})`,
+          inline: true
+        },
+        {
+          name: "🕒 Last Updated",
+          value: `<t:${Math.floor(new Date(game.updated).getTime() / 1000)}:R>`,
+          inline: true
+        }
+      )
+      .setFooter({ text: "Roblox Game Updates" })
       .setTimestamp();
+
+    if (thumbnail) {
+      embed.setThumbnail(thumbnail);
+    }
 
     await channel.send({ embeds: [embed] });
 
