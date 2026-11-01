@@ -10,29 +10,6 @@ const CHANNEL_ID = process.env.CHANNEL_ID;
 const TOKEN = process.env.BOT_TOKEN;
 const PLACE_ID = process.env.PLACE_ID;
 
-const STATE_FILE = "last_seen.json";
-
-async function githubRequest(path, options = {}) {
-  const response = await fetch(
-    `https://api.github.com/repos/${process.env.GITHUB_REPOSITORY}/contents/${path}`,
-    {
-      ...options,
-      headers: {
-        Accept: "application/vnd.github+json",
-        Authorization: `Bearer ${process.env.GITHUB_TOKEN}`,
-        "X-GitHub-Api-Version": "2022-11-28",
-        ...(options.headers || {})
-      }
-    }
-  );
-
-  if (!response.ok && response.status !== 404) {
-    throw new Error(`GitHub API error: ${response.status}`);
-  }
-
-  return response.status === 404 ? null : response.json();
-}
-
 async function main() {
   const response = await fetch(
     `https://games.roblox.com/v1/games?universeIds=${UNIVERSE_ID}`
@@ -56,73 +33,38 @@ async function main() {
     thumbnail = thumbnailData.data?.[0]?.imageUrl || null;
   }
 
-  const previousFile = await githubRequest(STATE_FILE);
-  let previous = null;
+  await client.login(TOKEN);
 
-  if (previousFile) {
-    previous = JSON.parse(
-      Buffer.from(previousFile.content, "base64").toString()
-    );
-  }
+  const channel = await client.channels.fetch(CHANNEL_ID);
 
-  const current = {
-    updated: game.updated
-  };
+  const embed = new EmbedBuilder()
+    .setColor("#5865F2")
+    .setTitle("🆕 GAME UPDATE TEST!")
+    .setDescription(
+      `**${game.name}** announcement system test!\n\nThe bot is working correctly.`
+    )
+    .addFields(
+      {
+        name: "🎮 Game",
+        value: `[Play Now](https://www.roblox.com/games/${PLACE_ID})`,
+        inline: true
+      },
+      {
+        name: "🕒 Last Updated",
+        value: `<t:${Math.floor(new Date(game.updated).getTime() / 1000)}:R>`,
+        inline: true
+      }
+    )
+    .setFooter({ text: "Roblox Game Updates • Test Message" })
+    .setTimestamp();
 
-  if (!previous) {
-    console.log("First run: saving the current game update date.");
-  } else if (previous.updated !== current.updated) {
-    await client.login(TOKEN);
+  if (thumbnail) embed.setThumbnail(thumbnail);
 
-    const channel = await client.channels.fetch(CHANNEL_ID);
+  await channel.send({ embeds: [embed] });
 
-    const embed = new EmbedBuilder()
-      .setColor("#5865F2")
-      .setTitle("🆕 GAME UPDATED!")
-      .setDescription(
-        `**${game.name}** has received an update!\n\nCheck out what's new and jump back into the game!`
-      )
-      .addFields(
-        {
-          name: "🎮 Game",
-          value: `[Play Now](https://www.roblox.com/games/${PLACE_ID})`,
-          inline: true
-        },
-        {
-          name: "🕒 Last Updated",
-          value: `<t:${Math.floor(new Date(game.updated).getTime() / 1000)}:R>`,
-          inline: true
-        }
-      )
-      .setFooter({ text: "Roblox Game Updates" })
-      .setTimestamp();
+  console.log("Test announcement sent successfully!");
 
-    if (thumbnail) {
-      embed.setThumbnail(thumbnail);
-    }
-
-    await channel.send({ embeds: [embed] });
-
-    console.log("Update announcement sent!");
-    await client.destroy();
-  } else {
-    console.log("No new update detected.");
-  }
-
-  const content = Buffer.from(
-    JSON.stringify(current, null, 2)
-  ).toString("base64");
-
-  await githubRequest(STATE_FILE, {
-    method: "PUT",
-    body: JSON.stringify({
-      message: "Update Roblox game tracking state",
-      content,
-      ...(previousFile ? { sha: previousFile.sha } : {})
-    })
-  });
-
-  console.log("Tracking state saved.");
+  await client.destroy();
 }
 
 main().catch(async error => {
