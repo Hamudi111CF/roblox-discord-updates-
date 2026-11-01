@@ -9,88 +9,41 @@ const client = new Client({
   intents: [GatewayIntentBits.Guilds]
 });
 
-const UNIVERSE_ID = process.env.UNIVERSE_ID;
-const CHANNEL_ID = process.env.CHANNEL_ID;
 const TOKEN = process.env.BOT_TOKEN;
-const PLACE_ID = process.env.PLACE_ID;
+const CHANNEL_ID = process.env.CHANNEL_ID;
 
 async function main() {
-  // Get Roblox game information
-  const response = await fetch(
-    `https://games.roblox.com/v1/games?universeIds=${UNIVERSE_ID}`
-  );
+  const title = process.env.ANNOUNCEMENT_TITLE;
+  const message = process.env.ANNOUNCEMENT_MESSAGE;
+  const eventName = process.env.EVENT_NAME;
 
-  if (!response.ok) {
-    throw new Error("Could not fetch Roblox game information.");
+  if (eventName !== "workflow_dispatch" || !title || !message) {
+    console.log("Scheduled run: no manual announcement requested.");
+    return;
   }
 
-  const result = await response.json();
-  const game = result.data?.[0];
-
-  if (!game) {
-    throw new Error("Game not found.");
-  }
-
-  // Get the game's icon
-  const thumbnailResponse = await fetch(
-    `https://thumbnails.roblox.com/v1/games/icons?universeIds=${UNIVERSE_ID}&size=512x512&format=Png&isCircular=false`
-  );
-
-  if (!thumbnailResponse.ok) {
-    throw new Error("Could not fetch the Roblox game icon.");
-  }
-
-  const thumbnailData = await thumbnailResponse.json();
-  const gameIcon = thumbnailData.data?.[0]?.imageUrl;
-
-  if (!gameIcon) {
-    throw new Error("Roblox did not return a game icon.");
-  }
-
-  // Connect Discord bot
   await client.login(TOKEN);
 
   const channel = await client.channels.fetch(CHANNEL_ID);
 
   if (!channel || !channel.isTextBased()) {
-    throw new Error("Discord channel not found or is not text-based.");
+    throw new Error("Discord channel not found.");
   }
 
-  // Create announcement embed
   const embed = new EmbedBuilder()
     .setColor("#5865F2")
-    .setAuthor({
-      name: "ROBLOX GAME UPDATES",
-      iconURL: gameIcon
-    })
-    .setTitle("🆕 GAME UPDATE!")
-    .setDescription(
-      `**${game.name}** announcement system test!\n\nThe bot is working correctly.`
-    )
-    .setThumbnail(gameIcon)
-    .addFields(
-      {
-        name: "🎮 Game",
-        value: `[Play Now](https://www.roblox.com/games/${PLACE_ID})`,
-        inline: true
-      },
-      {
-        name: "🕒 Last Updated",
-        value: `<t:${Math.floor(new Date(game.updated).getTime() / 1000)}:R>`,
-        inline: true
-      }
-    )
+    .setTitle(title)
+    .setDescription(message)
     .setFooter({
-      text: "Roblox Game Updates"
+      text: "Brainrot Corp Tycoon • Official Announcements"
     })
     .setTimestamp();
 
-  // Send announcement
   await channel.send({
     embeds: [embed]
   });
 
-  console.log("Announcement with game icon sent successfully!");
+  console.log("Manual announcement sent successfully!");
 
   await client.destroy();
 }
