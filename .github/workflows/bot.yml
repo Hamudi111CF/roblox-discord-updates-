@@ -1,7 +1,18 @@
+
 name: Roblox Discord Bot
 
 on:
   workflow_dispatch:
+    inputs:
+      announcement_title:
+        description: "Announcement title"
+        required: true
+        type: string
+      announcement_message:
+        description: "Announcement message"
+        required: true
+        type: string
+
   schedule:
     - cron: "0 * * * *"
 
@@ -33,3 +44,6 @@ jobs:
           PLACE_ID: ${{ secrets.PLACE_ID }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GITHUB_REPOSITORY: ${{ github.repository }}
+          ANNOUNCEMENT_TITLE: ${{ inputs.announcement_title }}
+          ANNOUNCEMENT_MESSAGE: ${{ inputs.announcement_message }}
+          EVENT_NAME: ${{ github.event_name }}
