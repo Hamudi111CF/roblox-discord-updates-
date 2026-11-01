@@ -42,6 +42,7 @@ jobs:
           CHANNEL_ID: ${{ secrets.CHANNEL_ID }}
           UNIVERSE_ID: ${{ secrets.UNIVERSE_ID }}
           PLACE_ID: ${{ secrets.PLACE_ID }}
+          UPDATE_ROLE_ID: ${{ secrets.UPDATE_ROLE_ID }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GITHUB_REPOSITORY: ${{ github.repository }}
           ANNOUNCEMENT_TITLE: ${{ inputs.announcement_title }}
