@@ -1,5 +1,9 @@
 
-const { Client, GatewayIntentBits, EmbedBuilder } = require("discord.js");
+const {
+  Client,
+  GatewayIntentBits,
+  EmbedBuilder
+} = require("discord.js");
 
 const client = new Client({
   intents: [GatewayIntentBits.Guilds]
@@ -11,38 +15,59 @@ const TOKEN = process.env.BOT_TOKEN;
 const PLACE_ID = process.env.PLACE_ID;
 
 async function main() {
+  // Get Roblox game information
   const response = await fetch(
     `https://games.roblox.com/v1/games?universeIds=${UNIVERSE_ID}`
   );
 
-  if (!response.ok) throw new Error("Roblox API failed");
+  if (!response.ok) {
+    throw new Error("Could not fetch Roblox game information.");
+  }
 
   const result = await response.json();
   const game = result.data?.[0];
 
-  if (!game) throw new Error("Game not found");
+  if (!game) {
+    throw new Error("Game not found.");
+  }
 
+  // Get the game's icon
   const thumbnailResponse = await fetch(
     `https://thumbnails.roblox.com/v1/games/icons?universeIds=${UNIVERSE_ID}&size=512x512&format=Png&isCircular=false`
   );
 
-  let thumbnail = null;
-
-  if (thumbnailResponse.ok) {
-    const thumbnailData = await thumbnailResponse.json();
-    thumbnail = thumbnailData.data?.[0]?.imageUrl || null;
+  if (!thumbnailResponse.ok) {
+    throw new Error("Could not fetch the Roblox game icon.");
   }
 
+  const thumbnailData = await thumbnailResponse.json();
+  const gameIcon = thumbnailData.data?.[0]?.imageUrl;
+
+  if (!gameIcon) {
+    throw new Error("Roblox did not return a game icon.");
+  }
+
+  // Connect Discord bot
   await client.login(TOKEN);
 
   const channel = await client.channels.fetch(CHANNEL_ID);
 
+  if (!channel || !channel.isTextBased()) {
+    throw new Error("Discord channel not found or is not text-based.");
+  }
+
+  // Create announcement embed
   const embed = new EmbedBuilder()
     .setColor("#5865F2")
-    .setTitle("🆕 GAME UPDATE TEST!")
+    .setAuthor({
+      name: "ROBLOX GAME UPDATES",
+      iconURL: gameIcon
+    })
+    .setTitle("🆕 GAME UPDATE!")
     .setDescription(
       `**${game.name}** announcement system test!\n\nThe bot is working correctly.`
     )
+    .setThumbnail(gameIcon)
     .addFields(
       {
         name: "🎮 Game",
@@ -55,20 +80,27 @@ async function main() {
         inline: true
       }
     )
-    .setFooter({ text: "Roblox Game Updates • Test Message" })
+    .setFooter({
+      text: "Roblox Game Updates"
+    })
     .setTimestamp();
 
-  if (thumbnail) embed.setThumbnail(thumbnail);
+  // Send announcement
+  await channel.send({
+    embeds: [embed]
+  });
 
-  await channel.send({ embeds: [embed] });
-
-  console.log("Test announcement sent successfully!");
+  console.log("Announcement with game icon sent successfully!");
 
   await client.destroy();
 }
 
 main().catch(async error => {
   console.error(error);
-  if (client.isReady()) await client.destroy();
+
+  if (client.isReady()) {
+    await client.destroy();
+  }
+
   process.exit(1);
 });
